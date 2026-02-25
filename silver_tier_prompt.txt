@@ -1,0 +1,47 @@
+You are upgrading a Bronze-tier Personal AI Employee system to a Silver-tier Functional Assistant. The Bronze system is fully functional with one Watcher, dashboard updates, file movements, and Claude Code processing via Agent Skills.
+
+Your goal: implement Silver Tier requirements while keeping Bronze functionality intact.
+
+**Requirements:**
+1. Add **two or more Watcher scripts**: Gmail, WhatsApp, LinkedIn (optional: others).
+2. Implement **automatic LinkedIn posting workflow** for business updates to generate sales.
+3. Create a **Claude reasoning loop**:
+   - Automatically generate Plan.md files for each new task.
+   - Include action steps and responsible agents.
+4. Implement a **MCP server** for external actions (e.g., sending emails) connected to Agent Skills.
+5. Add **human-in-the-loop approval workflow** for sensitive actions.
+6. Add **basic scheduling** via cron (Linux) or Task Scheduler (Windows) for recurring tasks and posts.
+7. All AI functionality must be implemented as **Agent Skills**:
+   - Examples: classify_task, create_plan, post_linkedin, execute_action, log_action.
+
+**Implementation Instructions:**
+- Integrate new Watchers with existing Inbox watcher.
+- Update FTE_Orchestrator to handle tasks from all Watchers.
+- Ensure the reasoning loop creates Plan.md files automatically.
+- Connect MCP server to relevant Agent Skills.
+- Trigger human approval workflow for sensitive tasks.
+- Only execute actions after approval.
+- Schedule recurring scans and posts.
+- Maintain modular code, logging, and dashboard updates.
+
+**Output Requirements:**
+- Python scripts for all Watchers
+- Updated FTE_Orchestrator
+- MCP server script
+- Agent Skill scripts
+- LinkedIn posting module
+- Sample cron/Task Scheduler config
+- Sample workflow demonstrating:
+   Gmail → Plan.md → Human Approval → Action → Done → LinkedIn post
+- Dashboard updates reflecting new tasks and approvals.
+
+**Testing Instructions:**
+- Provide a test task detected by Watchers.
+- Show Plan.md generated via reasoning loop.
+- Trigger approval workflow for sensitive tasks.
+- Execute action only after approval.
+- Task moved to Done.
+- LinkedIn post generated.
+- All logs recorded.
+
+Keep everything modular and ready to run in VS Code. Maintain full Bronze functionality while adding Silver-tier features.

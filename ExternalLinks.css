@@ -1,0 +1,121 @@
+/**
+ * ExternalLinks Component Styles
+ */
+
+.external-links-container {
+  padding: 2rem;
+  background: #f8f9fa;
+  border-radius: 15px;
+  margin: 20px 0;
+}
+
+.external-links-container h2 {
+  color: #333;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.link-card {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  text-align: center;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.link-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.link-card .icon {
+  font-size: 3em;
+  margin-bottom: 15px;
+}
+
+.link-card h3 {
+  color: #333;
+  margin-bottom: 10px;
+  font-size: 1.3em;
+}
+
+.link-card p {
+  color: #666;
+  margin-bottom: 20px;
+  font-size: 0.9em;
+}
+
+.link-button {
+  display: inline-block;
+  padding: 12px 30px;
+  border-radius: 25px;
+  text-decoration: none;
+  color: white;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 1em;
+}
+
+.link-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+
+/* WhatsApp Styles */
+.link-card.whatsapp .link-button,
+.whatsapp-btn {
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+}
+
+.link-card.whatsapp .link-button:hover,
+.whatsapp-btn:hover {
+  background: linear-gradient(135deg, #128C7E 0%, #25D366 100%);
+}
+
+/* LinkedIn Styles */
+.link-card.linkedin .link-button,
+.linkedin-btn {
+  background: linear-gradient(135deg, #0077B5 0%, #00589b 100%);
+}
+
+.link-card.linkedin .link-button:hover,
+.linkedin-btn:hover {
+  background: linear-gradient(135deg, #00589b 0%, #0077B5 100%);
+}
+
+/* Gmail Styles */
+.link-card.gmail .link-button,
+.gmail-btn {
+  background: linear-gradient(135deg, #EA4335 0%, #c5221f 100%);
+}
+
+.link-card.gmail .link-button:hover,
+.gmail-btn:hover {
+  background: linear-gradient(135deg, #c5221f 0%, #EA4335 100%);
+}
+
+/* External link indicator */
+.external-link::after {
+  content: " ↗";
+  font-size: 0.8em;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .links-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .external-links-container {
+    padding: 1rem;
+  }
+}
