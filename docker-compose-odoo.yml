@@ -1,0 +1,148 @@
+# Docker Networking Configuration
+# ===========================================
+# Odoo ↔ AI Employee Integration
+# ===========================================
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # AI Employee Webhook Handler
+  # ===========================================
+  ai_employee_webhook:
+    build:
+      context: .
+      dockerfile: Dockerfile.webhook
+    container_name: ai_employee_webhook
+    ports:
+      - "5050:5050"
+    environment:
+      - ODOO_WEBHOOK_SECRET=${ODOO_WEBHOOK_SECRET:-change-this-in-production}
+      - ODOO_WEBHOOK_PORT=5050
+      - MCP_SERVER_URL=http://host.docker.internal:5001
+      - GMAIL_CLIENT_ID=${GMAIL_CLIENT_ID}
+      - GMAIL_CLIENT_SECRET=${GMAIL_CLIENT_SECRET}
+      - GMAIL_TOKEN_FILE=/app/tokens/gmail_token.json
+      - WHATSAPP_ACCESS_TOKEN=${WHATSAPP_ACCESS_TOKEN}
+      - WHATSAPP_PHONE_NUMBER_ID=${WHATSAPP_PHONE_NUMBER_ID}
+      - LINKEDIN_ACCESS_TOKEN=${LINKEDIN_ACCESS_TOKEN}
+      - LINKEDIN_PERSON_ID=${LINKEDIN_PERSON_ID}
+    volumes:
+      - ./Logs:/app/Logs
+      - ./tokens:/app/tokens
+      - ./LinkedIn_Drafts:/app/LinkedIn_Drafts
+    networks:
+      - ai_employee_network
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ===========================================
+  # MCP Server (Communication)
+  # ===========================================
+  mcp_server:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    container_name: mcp_server_gold
+    ports:
+      - "5001:5001"
+    environment:
+      - GMAIL_CLIENT_ID=${GMAIL_CLIENT_ID}
+      - GMAIL_CLIENT_SECRET=${GMAIL_CLIENT_SECRET}
+      - WHATSAPP_ACCESS_TOKEN=${WHATSAPP_ACCESS_TOKEN}
+      - LINKEDIN_ACCESS_TOKEN=${LINKEDIN_ACCESS_TOKEN}
+    volumes:
+      - ./Logs:/app/Logs
+      - ./tokens:/app/tokens
+    networks:
+      - ai_employee_network
+    restart: unless-stopped
+
+  # ===========================================
+  # Optional: Nginx Reverse Proxy
+  # ===========================================
+  nginx_proxy:
+    image: nginx:alpine
+    container_name: ai_employee_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./Logs/nginx:/var/log/nginx
+    networks:
+      - ai_employee_network
+    depends_on:
+      - ai_employee_webhook
+      - mcp_server
+    restart: unless-stopped
+
+networks:
+  ai_employee_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# ===========================================
+# NETWORKING MODES
+# ===========================================
+
+# MODE 1: Docker to Host (Recommended for Development)
+# -----------------------------------------------------
+# Odoo runs on host machine, AI Employee in Docker
+# Webhook URL in Odoo: http://host.docker.internal:5050/odoo_webhook
+#
+# Requirements:
+# - Docker Desktop: host.docker.internal is auto-configured
+# - Linux: Add --add-host=host.docker.internal:host-gateway to docker run
+# - Or use extra_hosts in docker-compose (as shown above)
+
+# MODE 2: Both in Same Docker Network
+# ------------------------------------
+# Both Odoo and AI Employee run in Docker on same network
+# Webhook URL in Odoo: http://ai_employee_webhook:5050/odoo_webhook
+#
+# Add Odoo to the same network:
+# networks:
+#   ai_employee_network:
+#     external: true
+
+# MODE 3: Production with Reverse Proxy
+# --------------------------------------
+# Use Nginx reverse proxy with SSL
+# Webhook URL in Odoo: https://your-domain.com/odoo_webhook
+#
+# See nginx/nginx.conf for configuration
+
+# ===========================================
+# FIREWALL RULES (Windows)
+# ===========================================
+# Run as Administrator in PowerShell:
+#
+# # Allow inbound traffic on webhook port
+# New-NetFirewallRule -DisplayName "AI Employee Webhook" -Direction Inbound -LocalPort 5050 -Protocol TCP -Action Allow
+#
+# # Allow outbound traffic to MCP Server
+# New-NetFirewallRule -DisplayName "AI Employee to MCP" -Direction Outbound -RemotePort 5001 -Protocol TCP -Action Allow
+
+# ===========================================
+# DOCKER COMMANDS
+# ===========================================
+
+# Start all services
+# docker-compose up -d
+
+# View logs
+# docker-compose logs -f ai_employee_webhook
+
+# Restart webhook handler
+# docker-compose restart ai_employee_webhook
+
+# Check network connectivity
+# docker-compose exec ai_employee_webhook ping host.docker.internal
+
+# Test webhook endpoint
+# curl http://localhost:5050/health

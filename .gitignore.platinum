@@ -1,0 +1,226 @@
+# =============================================================================
+# PLATINUM TIER AI EMPLOYEE - GITIGNORE
+# =============================================================================
+# Security-focused .gitignore for Platinum Tier cloud deployment
+# 
+# CRITICAL: These files/directories are NEVER synced to Git vault
+# This protects sensitive credentials, sessions, and local state
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# ENVIRONMENT & SECRETS (CRITICAL - NEVER SYNC)
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.platinum.example
+.env.local
+.env.gold
+.env.platinum
+.env.cloud
+*.env
+
+# Secret files
+secrets/
+secret*
+credentials*
+*.credentials
+*.secret
+
+# -----------------------------------------------------------------------------
+# OAUTH TOKENS & SESSION DATA (CRITICAL - NEVER SYNC)
+# -----------------------------------------------------------------------------
+tokens/
+token_*.json
+*_token.json
+gmail_token.json
+linkedin_token.json
+whatsapp_token.json
+oauth_*.json
+
+# Browser sessions
+sessions/
+session/
+linkedin_session/
+wa_session/
+whatsapp_session/
+browser_session/
+*.session
+*.session/*
+
+# Cookies
+*.cookies
+cookies/
+
+# -----------------------------------------------------------------------------
+# LOGS & DEBUG DATA (LOCAL ONLY)
+# -----------------------------------------------------------------------------
+Logs/
+logs/
+*.log
+log/
+debug/
+trace/
+
+# Crash dumps
+crashes/
+dumps/
+
+# -----------------------------------------------------------------------------
+# PYTHON CACHE & BUILD ARTIFACTS
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# -----------------------------------------------------------------------------
+# OS FILES
+# -----------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# -----------------------------------------------------------------------------
+# TEMPORARY FILES
+# -----------------------------------------------------------------------------
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# -----------------------------------------------------------------------------
+# DATABASE FILES (LOCAL STATE)
+# -----------------------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# -----------------------------------------------------------------------------
+# PLATINUM TIER SPECIFIC - SAFE TO SYNC
+# -----------------------------------------------------------------------------
+# These directories ARE synced (for reference - not ignored):
+# - Pending_Approval/    (drafts awaiting human review)
+# - Generated_Drafts/    (AI-generated content)
+# - CEO_Briefings/       (executive reports)
+# - Plans/               (task execution plans)
+
+# -----------------------------------------------------------------------------
+# PLATINUM TIER SPECIFIC - NEVER SYNC
+# -----------------------------------------------------------------------------
+# Local execution state
+Done/
+Error/
+Approved/
+Gmail_Archive/
+WhatsApp_Tasks/
+Email_Tasks/
+
+# Note: The above are managed by git_sync_local.py and only
+# synced to vault after execution, not committed to remote
+
+# -----------------------------------------------------------------------------
+# CLOUD STORAGE SYNC (MANAGED SEPARATELY)
+# -----------------------------------------------------------------------------
+Cloud_Storage/
+cloud_storage/
+
+# -----------------------------------------------------------------------------
+# TESTING & DEVELOPMENT
+# -----------------------------------------------------------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Test data
+test_data/
+mock_data/
+*.test.json
+
+# -----------------------------------------------------------------------------
+# DOCUMENTATION BUILD
+# -----------------------------------------------------------------------------
+docs/_build/
+site/
+
+# -----------------------------------------------------------------------------
+# DEPLOYMENT
+# -----------------------------------------------------------------------------
+.docker/
+.dockerignore
+Dockerfile
+docker-compose*.yml
+*.tar.gz
+
+# Kubernetes
+.kube/
+*.yaml
+!*.example.yaml
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# -----------------------------------------------------------------------------
+# SECURITY NOTES
+# -----------------------------------------------------------------------------
+# 
+# The following patterns ensure that:
+# 1. OAuth tokens are never committed (prevents account hijacking)
+# 2. Session data stays local (prevents session hijacking)
+# 3. Environment variables with secrets are protected
+# 4. Logs don't leak sensitive operational data
+# 5. Local execution state doesn't conflict with cloud state
+#
+# Git sync is managed by:
+# - git_sync_cloud.py (cloud side)
+# - git_sync_local.py (local side)
+#
+# These scripts implement:
+# - Secure file filtering
+# - Conflict resolution (claim-by-move)
+# - Debounced pushes (prevent loops)
+# - Pre-execution pulls (ensure freshness)
+#
+# =============================================================================

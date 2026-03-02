@@ -1,653 +1,556 @@
-# Odoo Integration - Complete Guide
+# Odoo ↔ AI Employee Integration
+## Production-Ready Webhook Integration System
 
-## Overview
+Complete integration between Odoo ERP and AI Employee automation system for automated customer communications.
 
-This module provides comprehensive Odoo ERP integration with:
-- **OdooClient**: Reusable XML-RPC client with error handling and validation
-- **OdooSkills**: High-level skills for AI agent integration
-- **FinanceAgent**: Task-based finance agent for autonomous operations
+---
 
-## Features
+## 📋 Table of Contents
 
-### Core Capabilities
-- ✅ Connection management with automatic reconnection
-- ✅ Comprehensive error handling and validation
-- ✅ Full CRUD operations (Create, Read, Update, Delete, Search)
-- ✅ Invoice creation and management
-- ✅ Vendor bill processing
-- ✅ Employee expense tracking
-- ✅ Payment processing (customer & vendor)
-- ✅ Journal entry creation
-- ✅ Financial reporting (A/R, A/P)
-- ✅ Data export (JSON, CSV)
-- ✅ Context manager support
+1. [Architecture Overview](#architecture-overview)
+2. [Features](#features)
+3. [Prerequisites](#prerequisites)
+4. [Installation](#installation)
+5. [Configuration](#configuration)
+6. [Docker Networking](#docker-networking)
+7. [Odoo Setup](#odoo-setup)
+8. [Testing](#testing)
+9. [Troubleshooting](#troubleshooting)
+10. [API Reference](#api-reference)
 
-### Supported Odoo Models
-- `account.move` (Invoices, Bills, Journal Entries)
-- `account.payment` (Payments)
-- `hr.expense` (Expenses)
-- `res.partner` (Customers, Vendors)
-- `product.product` (Products)
-- And any custom model via generic CRUD
+---
 
-## Quick Start
+## 🏗️ Architecture Overview
 
-### 1. Configure Environment
-
-Add your Odoo credentials to `.env`:
-
-```env
-ODOO_URL=http://localhost:8069
-ODOO_DB=odoo
-ODOO_USER=admin
-ODOO_PASSWORD=admin
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         ODOO ERP (Docker)                               │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                     │
+│  │   CRM Lead  │  │ Sale Order  │  │   Invoice   │                     │
+│  │  (Created)  │  │ (Confirmed) │  │  (Created)  │                     │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘                     │
+│         │                │                │                              │
+│         └────────────────┴────────────────┘                              │
+│                          │                                               │
+│                          ▼                                               │
+│              ┌───────────────────────┐                                  │
+│              │   Automated Actions   │                                  │
+│              │   (Python Code)       │                                  │
+│              └───────────┬───────────┘                                  │
+└──────────────────────────┼──────────────────────────────────────────────┘
+                           │ HTTP POST Webhook
+                           ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    AI EMPLOYEE SYSTEM (Port 5050)                       │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                    Odoo Webhook Handler                          │   │
+│  │  Route: /odoo_webhook (POST)                                    │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                          │                                              │
+│         ┌────────────────┼────────────────┐                            │
+│         ▼                ▼                ▼                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                    │
+│  │   Gmail     │  │  WhatsApp   │  │  LinkedIn   │                    │
+│  │    API      │  │ Business API│  │    API      │                    │
+│  └─────────────┘  └─────────────┘  └─────────────┘                    │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                      Event Processors                            │   │
+│  │  • new_lead → WhatsApp + Email + LinkedIn Draft                 │   │
+│  │  • sale_confirmed → Thank-you WhatsApp + LinkedIn Post          │   │
+│  │  • invoice_created → Payment Email + WhatsApp Reminder          │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2. Test Connection
+---
+
+## ✨ Features
+
+### Event Handling
+
+| Event | Trigger | Actions |
+|-------|---------|---------|
+| `new_lead` | CRM Lead Created | WhatsApp greeting, Email follow-up, LinkedIn draft |
+| `sale_confirmed` | Sale Order Confirmed | Thank-you WhatsApp, LinkedIn success story (optional) |
+| `invoice_created` | Invoice Created | Payment reminder email, WhatsApp reminder (high-value) |
+
+### Production Features
+
+- ✅ **Secure Webhooks** - HMAC secret validation
+- ✅ **Error Handling** - Comprehensive try/catch with logging
+- ✅ **Retry Logic** - Automatic retry on transient failures
+- ✅ **Structured Logging** - JSON logs with timestamps
+- ✅ **Health Checks** - `/health` endpoint for monitoring
+- ✅ **Docker Ready** - Complete Docker Compose configuration
+- ✅ **SSL Support** - Nginx reverse proxy configuration
+
+---
+
+## 📦 Prerequisites
+
+### Software Requirements
+
+- Python 3.11+
+- Docker & Docker Compose (optional)
+- Odoo 16.0+ (running in Docker or locally)
+- Node.js 18+ (for MCP Server)
+
+### API Credentials
+
+| Service | Required Credentials |
+|---------|---------------------|
+| Gmail | OAuth 2.0 Client ID, Client Secret, Token |
+| WhatsApp Business | Access Token, Phone Number ID |
+| LinkedIn | Access Token, Person ID |
+
+---
+
+## 🚀 Installation
+
+### Option 1: Direct Python Installation
 
 ```bash
-# Run the demo
-python odoo_demo.py
+# 1. Install dependencies
+pip install -r requirements-odoo.txt
 
-# Run unit tests
-python test_odoo_integration.py
+# 2. Copy environment file
+cp .env.example .env.gold
+
+# 3. Edit .env.gold with your credentials
+# Required variables:
+#   ODOO_WEBHOOK_SECRET=your-secret-key
+#   GMAIL_CLIENT_ID=your-client-id
+#   WHATSAPP_ACCESS_TOKEN=your-token
+#   LINKEDIN_ACCESS_TOKEN=your-token
+
+# 4. Run the webhook handler
+python odoo_webhook_handler.py
 ```
 
-### 3. Basic Usage
-
-```python
-from utils.odoo_client import get_odoo_client
-
-# Get client and connect
-client = get_odoo_client()
-client.connect()
-
-# Create an invoice
-invoice_id = client.create_invoice(
-    partner_id=1,
-    invoice_type='out_invoice',
-    lines=[
-        {'name': 'Consulting Services', 'quantity': 10, 'price_unit': 150}
-    ],
-    invoice_date='2026-02-19'
-)
-
-# Post the invoice
-client.post_invoice(invoice_id)
-
-# Disconnect
-client.disconnect()
-```
-
-### 4. Using Context Manager
-
-```python
-from utils.odoo_client import get_odoo_client
-
-with get_odoo_client() as client:
-    # Automatically connects
-    invoice_id = client.create_invoice(...)
-    # Automatically disconnects on exit
-```
-
-## API Reference
-
-### OdooClient
-
-#### Initialization
-
-```python
-client = OdooClient(
-    url="http://localhost:8069",
-    db="odoo",
-    username="admin",
-    password="admin",
-    api_key=None,  # Optional
-    timeout=30
-)
-```
-
-#### Connection Methods
-
-```python
-client.connect()           # Connect to Odoo
-client.disconnect()        # Disconnect
-client.check_connection()  # Check if connected
-client.get_server_version() # Get Odoo version
-```
-
-#### Generic CRUD
-
-```python
-# Create
-id = client.create('res.partner', {'name': 'Customer', 'email': 'test@example.com'})
-
-# Read
-records = client.read('res.partner', [1, 2, 3])
-
-# Update
-client.update('res.partner', [1], {'phone': '+1-555-0100'})
-
-# Delete
-client.delete('res.partner', [1])
-
-# Search
-ids = client.search('res.partner', [('name', 'ilike', 'Acme')], limit=10)
-
-# Search & Read
-records = client.search_read(
-    'res.partner',
-    [('name', 'ilike', 'Acme')],
-    fields=['id', 'name', 'email'],
-    limit=10
-)
-```
-
-#### Invoice Operations
-
-```python
-# Create customer invoice
-invoice_id = client.create_invoice(
-    partner_id=1,
-    invoice_type='out_invoice',  # or 'in_invoice', 'out_refund', 'in_refund'
-    lines=[
-        {'name': 'Product', 'quantity': 2, 'price_unit': 100, 'product_id': 5}
-    ],
-    invoice_date='2026-02-19',
-    invoice_date_due='2026-03-19',
-    payment_reference='INV-2026-001'
-)
-
-# Get invoice
-invoice = client.get_invoice(invoice_id)
-
-# Get multiple invoices
-invoices = client.get_invoices(
-    partner_id=1,
-    state='posted',
-    date_from='2026-01-01'
-)
-
-# Post invoice
-client.post_invoice(invoice_id)
-
-# Cancel invoice
-client.cancel_invoice(invoice_id)
-
-# Register payment
-payment_id = client.register_invoice_payment(
-    invoice_id=invoice_id,
-    amount=1000,
-    payment_date='2026-02-19'
-)
-
-# Delete invoice (draft only)
-client.delete_invoice(invoice_id)
-```
-
-#### Expense Operations
-
-```python
-# Create expense
-expense_id = client.create_expense(
-    employee_id=1,
-    product_id=2,
-    name="Travel Expense",
-    unit_amount=350.00,
-    quantity=1,
-    date='2026-02-19'
-)
-
-# Get expenses
-expenses = client.get_expenses(
-    employee_id=1,
-    state='reported',
-    limit=50
-)
-
-# Submit for approval
-client.submit_expenses([1, 2, 3])
-
-# Approve expenses
-client.approve_expenses([1, 2, 3])
-
-# Post expenses
-client.post_expenses([1, 2, 3])
-```
-
-#### Payment Operations
-
-```python
-# Create payment
-payment_id = client.create_payment(
-    partner_id=1,
-    amount=1000,
-    payment_type='outbound',  # or 'inbound'
-    payment_date='2026-02-19',
-    payment_reference='PAY-001'
-)
-
-# Get payments
-payments = client.get_payments(
-    partner_id=1,
-    state='posted',
-    limit=50
-)
-```
-
-#### Journal Entry Operations
-
-```python
-# Create journal entry
-entry_id = client.create_journal_entry(
-    name="Monthly Depreciation",
-    date='2026-02-19',
-    lines=[
-        {'account_id': 10, 'debit': 1000, 'credit': 0, 'name': 'Depreciation'},
-        {'account_id': 20, 'debit': 0, 'credit': 1000, 'name': 'Accumulated Depreciation'}
-    ],
-    journal_id=1,
-    ref='DEPR-001'
-)
-
-# Get journal entries
-entries = client.get_journal_entries(
-    date_from='2026-01-01',
-    state='posted',
-    limit=100
-)
-
-# Post journal entry
-client.post_journal_entry(entry_id)
-
-# Reverse journal entry
-reversal_id = client.reverse_journal_entry(entry_id, date='2026-02-20')
-```
-
-#### Partner Operations
-
-```python
-# Get partner
-partner = client.get_partner(partner_id)
-
-# Search partners
-partners = client.search_partners(
-    name='Acme',
-    email='@acme.com',
-    customer=True,
-    limit=10
-)
-
-# Create partner
-partner_id = client.create_partner(
-    name='New Customer',
-    email='contact@example.com',
-    phone='+1-555-0100',
-    city='New York',
-    customer=True,
-    supplier=False
-)
-```
-
-#### Product Operations
-
-```python
-# Get product
-product = client.get_product(product_id)
-
-# Search products
-products = client.search_products(
-    name='Widget',
-    default_code='WID-',
-    limit=10
-)
-```
-
-#### Data Export
-
-```python
-# Export to JSON
-client.export_data(
-    model='res.partner',
-    ids=[1, 2, 3],
-    fields=['id', 'name', 'email'],
-    output_file='exports/partners.json',
-    format='json'
-)
-
-# Export to CSV
-client.export_data(
-    model='res.partner',
-    ids=[1, 2, 3],
-    fields=['id', 'name', 'email'],
-    output_file='exports/partners.csv',
-    format='csv'
-)
-```
-
-### OdooSkills
-
-High-level skills for AI agent integration:
-
-```python
-from Skills.odoo_skills import OdooSkills
-
-skills = OdooSkills()  # Auto-creates client
-# Or
-skills = OdooSkills(client)  # Use existing client
-
-# Invoice skills
-result = skills.create_customer_invoice(
-    customer_name="Acme Corp",
-    items=[{'name': 'Service', 'quantity': 1, 'price_unit': 1000}]
-)
-
-result = skills.create_vendor_bill(
-    vendor_name="Office Supplies",
-    items=[{'name': 'Chairs', 'quantity': 5, 'price_unit': 200}]
-)
-
-result = skills.post_invoice(invoice_id)
-
-result = skills.register_payment(
-    invoice_id=invoice_id,
-    amount=1000
-)
-
-# Expense skills
-result = skills.create_employee_expense(
-    employee_id=1,
-    expense_type="Travel",
-    amount=350,
-    description="Client meeting"
-)
-
-result = skills.submit_expense_report([1, 2, 3])
-
-# Payment skills
-result = skills.make_vendor_payment(
-    vendor_name="Supplier Inc",
-    amount=5000
-)
-
-result = skills.record_customer_payment(
-    customer_name="Acme Corp",
-    amount=10000
-)
-
-# Journal entry skills
-result = skills.create_journal_entry(
-    name="Adjustment Entry",
-    date='2026-02-19',
-    lines=[
-        {'account_id': 10, 'debit': 500, 'credit': 0},
-        {'account_id': 20, 'debit': 0, 'credit': 500}
-    ]
-)
-
-# Report skills
-result = skills.get_accounts_receivable()
-result = skills.get_accounts_payable()
-result = skills.get_journal_entries(date_from='2026-01-01')
-
-# Partner skills
-result = skills.find_customer("Acme")
-result = skills.create_customer(
-    name="New Customer",
-    email='contact@example.com'
-)
-
-# Utility skills
-result = skills.check_connection()
-result = skills.get_system_info()
-```
-
-### FinanceAgent
-
-Task-based agent for autonomous operations:
-
-```python
-from Agents.Finance_Agent import FinanceAgent
-
-# Use as context manager
-with FinanceAgent() as agent:
-    # Create invoice task
-    task = {
-        'action_type': 'create_invoice',
-        'customer_name': 'Acme Corp',
-        'items': [
-            {'name': 'Consulting', 'quantity': 10, 'price_unit': 150}
-        ],
-        'invoice_date': '2026-02-19'
-    }
-    success = agent.execute_task(task)
-    
-    # Log expense task
-    task = {
-        'action_type': 'log_expense',
-        'employee_id': 1,
-        'expense_type': 'Travel',
-        'amount': 350,
-        'description': 'Client meeting'
-    }
-    success = agent.execute_task(task)
-    
-    # Generate report task
-    task = {
-        'action_type': 'generate_report',
-        'report_type': 'receivables'
-    }
-    success = agent.execute_task(task)
-    report = task.get('result')
-```
-
-#### Supported Task Types
-
-| Action Type | Parameters |
-|-------------|------------|
-| `create_invoice` | customer_name, customer_id, items, invoice_date, due_date |
-| `create_vendor_bill` | vendor_name, vendor_id, items, bill_date, due_date |
-| `log_expense` | employee_id, expense_type, amount, description, date |
-| `submit_expenses` | expense_ids |
-| `register_payment` | invoice_id, amount, payment_date, payment_reference |
-| `create_journal_entry` | name, date, lines, journal_id, reference |
-| `post_invoice` | invoice_id |
-| `get_invoices` | customer_id, customer_name, state, limit |
-| `get_expenses` | employee_id, state, limit |
-| `generate_report` | report_type, date_from, date_to |
-| `find_customer` | search_term |
-| `create_customer` | name, email, phone, city |
-
-## Error Handling
-
-All operations include comprehensive error handling:
-
-```python
-from utils.odoo_client import (
-    OdooClientError,
-    OdooAuthenticationError,
-    OdooOperationError,
-    OdooValidationError
-)
-
-try:
-    client = get_odoo_client()
-    client.connect()
-    invoice_id = client.create_invoice(...)
-except OdooAuthenticationError as e:
-    print(f"Authentication failed: {e}")
-except OdooValidationError as e:
-    print(f"Validation error: {e}")
-except OdooOperationError as e:
-    print(f"Operation failed: {e}")
-except OdooClientError as e:
-    print(f"Client error: {e}")
-```
-
-## Testing
-
-### Run Unit Tests
+### Option 2: Docker Installation
 
 ```bash
-python test_odoo_integration.py
+# 1. Build and start containers
+docker-compose -f docker-compose-odoo.yml up -d
+
+# 2. View logs
+docker-compose -f docker-compose-odoo.yml logs -f ai_employee_webhook
+
+# 3. Check health
+curl http://localhost:5050/health
 ```
 
-### Run Full Demo
+---
+
+## ⚙️ Configuration
+
+### Environment Variables (.env.gold)
 
 ```bash
-python odoo_demo.py
+# ===========================================
+# WEBHOOK CONFIGURATION
+# ===========================================
+ODOO_WEBHOOK_SECRET=change-this-to-secure-random-string
+ODOO_WEBHOOK_PORT=5050
+
+# ===========================================
+# MCP SERVER
+# ===========================================
+MCP_SERVER_URL=http://localhost:5001
+
+# ===========================================
+# GMAIL API (OAuth 2.0)
+# ===========================================
+GMAIL_CLIENT_ID=your_gmail_client_id
+GMAIL_CLIENT_SECRET=your_gmail_client_secret
+GMAIL_TOKEN_FILE=tokens/gmail_token.json
+
+# ===========================================
+# WHATSAPP BUSINESS API
+# ===========================================
+WHATSAPP_ACCESS_TOKEN=your_whatsapp_token
+WHATSAPP_PHONE_NUMBER_ID=+1234567890
+
+# ===========================================
+# LINKEDIN API
+# ===========================================
+LINKEDIN_ACCESS_TOKEN=your_linkedin_token
+LINKEDIN_PERSON_ID=urn:li:person:YOUR_ID
+
+# ===========================================
+# LOGGING
+# ===========================================
+LOG_LEVEL=INFO
+FLASK_DEBUG=false
 ```
 
-## File Structure
+### Generate Secure Webhook Secret
 
-```
-D:\hackthone-0\
-├── utils\
-│   └── odoo_client.py       # Core Odoo client
-├── Skills\
-│   └── odoo_skills.py       # High-level skills
-├── Agents\
-│   └── Finance_Agent.py     # Finance agent
-├── odoo_demo.py             # Demo script
-├── test_odoo_integration.py # Test suite
-└── ODOO_INTEGRATION_README.md  # This file
+```bash
+# Generate a secure random secret
+python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-## Examples
+---
 
-### Complete Invoice Workflow
+## 🌐 Docker Networking
+
+### Scenario 1: Odoo on Host, AI Employee in Docker
+
+```yaml
+# In docker-compose-odoo.yml
+services:
+  ai_employee_webhook:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+```
+
+**Odoo Webhook URL:** `http://host.docker.internal:5050/odoo_webhook`
+
+### Scenario 2: Both in Same Docker Network
+
+```yaml
+# Add Odoo to the same network
+networks:
+  ai_employee_network:
+    external: true
+```
+
+**Odoo Webhook URL:** `http://ai_employee_webhook:5050/odoo_webhook`
+
+### Scenario 3: Production with SSL
+
+```bash
+# Using Nginx reverse proxy
+# Webhook URL: https://your-domain.com/odoo_webhook
+```
+
+See `nginx/nginx.conf` for SSL configuration.
+
+### Windows Firewall Rules
+
+```powershell
+# Run as Administrator
+
+# Allow inbound webhook traffic
+New-NetFirewallRule -DisplayName "AI Employee Webhook" `
+    -Direction Inbound `
+    -LocalPort 5050 `
+    -Protocol TCP `
+    -Action Allow
+
+# Allow outbound to MCP Server
+New-NetFirewallRule -DisplayName "AI Employee to MCP" `
+    -Direction Outbound `
+    -RemotePort 5001 `
+    -Protocol TCP `
+    -Action Allow
+```
+
+---
+
+## 🔧 Odoo Setup
+
+### Step 1: Enable Developer Mode
+
+1. Go to **Settings**
+2. Scroll to bottom
+3. Click **Activate Developer Mode**
+
+### Step 2: Create Automated Actions
+
+Navigate to: **Settings → Technical → Automation → Automated Actions**
+
+#### Action 1: New Lead Webhook
+
+| Field | Value |
+|-------|-------|
+| Name | AI Employee: New Lead Webhook |
+| Model | CRM Lead (crm.lead) |
+| Trigger | On Creation |
+| Action To Do | Execute Python Code |
+
+**Python Code:**
+```python
+# Copy from odoo_automated_actions.py → on_lead_created()
+```
+
+#### Action 2: Sale Confirmed Webhook
+
+| Field | Value |
+|-------|-------|
+| Name | AI Employee: Sale Confirmed Webhook |
+| Model | Sales Order (sale.order) |
+| Trigger | On Update |
+| Trigger Fields | state |
+| Domain | [('state', '=', 'sale')] |
+| Action To Do | Execute Python Code |
+
+**Python Code:**
+```python
+# Copy from odoo_automated_actions.py → on_sale_confirmed()
+```
+
+#### Action 3: Invoice Created Webhook
+
+| Field | Value |
+|-------|-------|
+| Name | AI Employee: Invoice Created Webhook |
+| Model | Invoice (account.move) |
+| Trigger | On Creation |
+| Domain | [('move_type', 'in', ['out_invoice', 'out_refund'])] |
+| Action To Do | Execute Python Code |
+
+**Python Code:**
+```python
+# Copy from odoo_automated_actions.py → on_invoice_created()
+```
+
+### Step 3: Configure Webhook URL
+
+In each automated action's Python code, update:
 
 ```python
-from utils.odoo_client import get_odoo_client
-
-with get_odoo_client() as client:
-    # 1. Create or find customer
-    partners = client.search_partners(name="Acme Corp")
-    if not partners:
-        customer_id = client.create_partner(
-            name="Acme Corp",
-            email="billing@acme.com",
-            customer=True
-        )
-    else:
-        customer_id = partners[0]['id']
-    
-    # 2. Create invoice
-    invoice_id = client.create_invoice(
-        partner_id=customer_id,
-        invoice_type='out_invoice',
-        lines=[
-            {'name': 'Consulting Services', 'quantity': 40, 'price_unit': 150},
-            {'name': 'Software License', 'quantity': 1, 'price_unit': 1000}
-        ],
-        invoice_date='2026-02-19',
-        invoice_date_due='2026-03-19'
-    )
-    
-    # 3. Post invoice
-    client.post_invoice(invoice_id)
-    
-    # 4. Register payment
-    client.register_invoice_payment(
-        invoice_id=invoice_id,
-        amount=7000,
-        payment_date='2026-02-19'
-    )
-    
-    # 5. Get updated invoice
-    invoice = client.get_invoice(invoice_id)
-    print(f"Invoice {invoice['name']}: {invoice['payment_state']}")
+WEBHOOK_URL = "http://host.docker.internal:5050/odoo_webhook"
+WEBHOOK_SECRET = "your-secret-key"  # Must match .env.gold
 ```
 
-### Expense Report Workflow
+---
 
-```python
-from utils.odoo_client import get_odoo_client
+## 🧪 Testing
 
-with get_odoo_client() as client:
-    # 1. Create expenses
-    expense_ids = []
-    for expense_data in [
-        {'type': 'Travel', 'amount': 350, 'desc': 'Client meeting'},
-        {'type': 'Meals', 'amount': 75, 'desc': 'Business lunch'},
-        {'type': 'Hotel', 'amount': 200, 'desc': 'Overnight stay'}
-    ]:
-        expense_id = client.create_expense(
-            employee_id=1,
-            product_id=1,  # Adjust based on your products
-            name=expense_data['desc'],
-            unit_amount=expense_data['amount']
-        )
-        expense_ids.append(expense_id)
-    
-    # 2. Submit for approval
-    client.submit_expenses(expense_ids)
-    
-    # 3. Check status
-    expenses = client.get_expenses(employee_id=1, state='reported')
-    print(f"Submitted {len(expenses)} expenses")
+### Test Webhook Endpoint
+
+```bash
+# Health check
+curl http://localhost:5050/health
+
+# Expected response:
+# {
+#   "status": "healthy",
+#   "service": "odoo_webhook_handler",
+#   "version": "1.0.0"
+# }
 ```
 
-### Financial Reporting
+### Test with Sample Payload
 
-```python
-from Skills.odoo_skills import OdooSkills
-
-skills = OdooSkills()
-
-# Accounts Receivable
-ar = skills.get_accounts_receivable()
-print(f"Total Receivable: ${ar['total_receivable']:.2f}")
-print(f"Outstanding Invoices: {ar['invoice_count']}")
-
-# Accounts Payable
-ap = skills.get_accounts_payable()
-print(f"Total Payable: ${ap['total_payable']:.2f}")
-print(f"Outstanding Bills: {ap['bill_count']}")
-
-# Journal Entries
-entries = skills.get_journal_entries(
-    date_from='2026-01-01',
-    date_to='2026-01-31'
-)
-print(f"Journal Entries: {entries['count']}")
+```bash
+# Test new_lead event
+curl -X POST http://localhost:5050/odoo_webhook \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "new_lead",
+    "secret": "your-secret-key",
+    "data": {
+      "id": "TEST001",
+      "partner_name": "Test Company",
+      "contact_name": "John Doe",
+      "email": "john@example.com",
+      "phone": "+1234567890",
+      "opportunity_type": "Service Inquiry",
+      "priority": "High",
+      "expected_revenue": 5000
+    }
+  }'
 ```
 
-## Best Practices
+### Test Sale Confirmed
 
-1. **Use Context Managers**: Always use `with` statement for automatic connection management
-2. **Error Handling**: Wrap operations in try-except blocks
-3. **Validation**: Validate inputs before making API calls
-4. **Logging**: Enable logging for debugging
-5. **Connection Pooling**: Reuse client instances when possible
-6. **Batch Operations**: Use bulk operations for better performance
+```bash
+curl -X POST http://localhost:5050/odoo_webhook \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "sale_confirmed",
+    "secret": "your-secret-key",
+    "data": {
+      "id": "SO001",
+      "name": "S0001",
+      "partner_name": "Test Customer",
+      "partner_email": "customer@example.com",
+      "partner_phone": "+1234567890",
+      "amount_total": 1500.00,
+      "currency": "USD",
+      "order_lines": [
+        {"name": "Product A", "quantity": 2, "price_unit": 750}
+      ]
+    }
+  }'
+```
 
-## Troubleshooting
+### Test Invoice Created
 
-### Connection Issues
+```bash
+curl -X POST http://localhost:5050/odoo_webhook \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "invoice_created",
+    "secret": "your-secret-key",
+    "data": {
+      "id": "INV001",
+      "number": "INV/2024/001",
+      "partner_name": "Test Customer",
+      "partner_email": "customer@example.com",
+      "amount_total": 1500.00,
+      "amount_due": 1500.00,
+      "currency": "USD",
+      "invoice_date_due": "2024-04-01",
+      "payment_state": "not_paid"
+    }
+  }'
+```
+
+---
+
+## 🔍 Troubleshooting
+
+### Webhook Not Receiving Events
+
+```bash
+# 1. Check if webhook handler is running
+curl http://localhost:5050/health
+
+# 2. Check logs
+docker-compose logs ai_employee_webhook
+
+# 3. Verify firewall rules
+netstat -an | findstr 5050
+
+# 4. Test network connectivity
+ping host.docker.internal
+```
+
+### Authentication Errors
+
+| Error | Solution |
+|-------|----------|
+| Invalid webhook secret | Verify `WEBHOOK_SECRET` matches in Odoo and .env.gold |
+| Gmail API error | Run `python authenticate_gmail.py` to refresh token |
+| WhatsApp API error | Check access token validity in Meta Developer Portal |
+| LinkedIn API error | Verify token hasn't expired (60-day validity) |
+
+### Docker Networking Issues
+
+```bash
+# Check container network
+docker network inspect ai_employee_network
+
+# Test connectivity from container
+docker exec -it ai_employee_webhook ping host.docker.internal
+
+# Restart network
+docker-compose down
+docker network prune
+docker-compose up -d
+```
+
+### Log Analysis
+
+```bash
+# View recent errors
+docker-compose logs ai_employee_webhook | grep ERROR
+
+# View event processing
+docker-compose logs ai_employee_webhook | grep "Processing"
+
+# Export logs
+docker-compose logs ai_employee_webhook > webhook_logs.txt
+```
+
+---
+
+## 📖 API Reference
+
+### Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| POST | `/odoo_webhook` | Main webhook endpoint |
+| GET | `/api/status` | API status and configuration |
+
+### Webhook Payload Structure
+
+```json
+{
+  "event_type": "new_lead | sale_confirmed | invoice_created",
+  "secret": "your-webhook-secret",
+  "data": {
+    // Event-specific data
+  }
+}
+```
+
+### Response Format
+
+**Success:**
+```json
+{
+  "status": "success",
+  "event_type": "new_lead",
+  "lead_id": "123",
+  "timestamp": "2024-01-15T10:30:00",
+  "actions": {
+    "whatsapp": {"status": "success", "message_id": "msg_123"},
+    "email": {"status": "success", "message_id": "msg_456"},
+    "linkedin": {"status": "draft_created", "file": "path/to/draft"}
+  }
+}
+```
+
+**Error:**
+```json
+{
+  "status": "error",
+  "error": "Error description"
+}
+```
+
+---
+
+## 📁 File Structure
 
 ```
-Error: Authentication failed
+hackthone-0/
+├── odoo_webhook_handler.py      # Main webhook handler
+├── odoo_automated_actions.py    # Odoo server-side code
+├── docker-compose-odoo.yml      # Docker configuration
+├── Dockerfile.webhook           # Webhook container
+├── requirements-odoo.txt        # Python dependencies
+├── ODOO_INTEGRATION_README.md   # This documentation
+├── .env.gold                    # Environment configuration
+├── Logs/                        # Application logs
+│   └── odoo_webhook.log
+├── tokens/                      # API tokens
+│   └── gmail_token.json
+└── LinkedIn_Drafts/             # LinkedIn draft posts
 ```
-- Check ODOO_URL, ODOO_DB, ODOO_USER, ODOO_PASSWORD in .env
-- Verify Odoo server is running
-- Check network connectivity
 
-```
-Error: XML-RPC fault
-```
-- Verify the model name is correct
-- Check user permissions
-- Ensure the operation is supported
+---
 
-### Common Issues
+## 🔐 Security Considerations
 
-**Invoice creation fails**: Ensure partner_id exists and invoice lines are provided
+1. **Webhook Secret**: Use a strong, randomly generated secret
+2. **HTTPS**: Use SSL/TLS in production (see nginx configuration)
+3. **Firewall**: Restrict access to webhook port
+4. **Token Storage**: Store API tokens securely, not in code
+5. **Rate Limiting**: Implement rate limiting for production use
+6. **Input Validation**: All incoming data is validated
 
-**Payment registration fails**: Invoice must be in posted state
+---
 
-**Expense submission fails**: Ensure employee record exists
+## 📞 Support
 
-## License
+For issues or questions:
 
-This integration is part of the Gold Tier AI Employee System.
+1. Check logs in `Logs/odoo_webhook.log`
+2. Review troubleshooting section above
+3. Verify all API credentials are valid
+4. Test with curl commands before Odoo integration
+
+---
+
+## 📄 License
+
+Internal use only - Company Proprietary
